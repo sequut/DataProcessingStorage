@@ -1,10 +1,26 @@
-public class Main {
-    public static void main(String[] args) throws InterruptedException {
-        Thread thread = new Thread(new Print());
-        thread.start();
+import java.util.Timer;
+import java.util.TimerTask;
 
-        Thread.sleep(2000);
-        thread.interrupt();
+public class Main {
+    public static void main(String[] args) {
+
+        Timer timer = new Timer();
+        Thread thread = new Thread(new Print());
+
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                thread.start();
+            }
+        }, 0);
+
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                thread.interrupt();
+                timer.cancel();
+            }
+        }, 2000);
     }
 }
 
