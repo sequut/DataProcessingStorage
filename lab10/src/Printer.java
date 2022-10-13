@@ -13,14 +13,17 @@ public class Printer implements Runnable {
     @Override
     public void run() {
         for(int i = 0; i < iterations; i++) {
+            System.out.println(i + " from thread");
             synchronized (lock) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.out.println(i + " from thread");
+                Main.parentOrder = false;
                 lock.notify();
+                while (!Main.parentOrder && (i != (iterations - 1))){
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }
