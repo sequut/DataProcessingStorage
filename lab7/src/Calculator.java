@@ -18,15 +18,15 @@ public class Calculator {
             answers.add(i, executorService.submit(new Counter(sign, threadsNumber * 2, 3 + i * 2, iterations)));
             sign *= -1;
         }
-
-        executorService.shutdown();
-
         for (int i = 0; i < threadsNumber; i++)
             answer += answers.get(i).get();
+
+
+        executorService.shutdown();
         return answer;
     }
 
-    class Counter implements Callable{
+    class Counter implements Callable<Double>{
         private int sign;
         private final int delta;
         private final int starting;

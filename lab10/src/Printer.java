@@ -16,7 +16,7 @@ public class Printer implements Runnable {
             System.out.println(i + " from thread");
             synchronized (lock) {
                 Main.parentOrder = false;
-                lock.notify();
+                lock.notifyAll();
                 while (!Main.parentOrder && (i != (iterations - 1))){
                     try {
                         lock.wait();

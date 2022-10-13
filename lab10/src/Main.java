@@ -1,18 +1,22 @@
 public class Main {
     private static final int iterations = 20;
     public volatile static boolean parentOrder;
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Printer printer = new Printer(iterations);
 
         Thread thread = new Thread(printer);
         Object lock = printer.getLock();
 
-        thread.start();
+
+        Thread.sleep(1000);
         for (int i = 0; i < iterations; i++){
             System.out.println(i + " from main ##");
             synchronized (lock){
+                if (i == 0)
+                    thread.start();
+
                 parentOrder = true;
-                lock.notify();
+                lock.notifyAll();
                 while (parentOrder && (i != (iterations - 1))){
                     try {
                         lock.wait();
