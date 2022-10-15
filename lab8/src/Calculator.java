@@ -4,12 +4,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class Calculator {
     private final int threadsNumber;
+    private final CyclicBarrier cyclicBarrier;
     private ExecutorService executorService;
     private ArrayList<Future<Double>> answers;
     private volatile static boolean working = true;
     private double answer = 1.0;
 
-    public Calculator(int threadsNumber){
+    public Calculator(int threadsNumber, CyclicBarrier cyclicBarrier){
+        this.cyclicBarrier = cyclicBarrier;
         this.threadsNumber = threadsNumber;
     }
 
@@ -25,6 +27,9 @@ public class Calculator {
     }
 
     public double getAnswer() throws ExecutionException, InterruptedException {
+
+
+
         for (int i = 0; i < threadsNumber; i++)
             answer += answers.get(i).get();
         return answer;
@@ -52,7 +57,7 @@ public class Calculator {
         }
 
         @Override
-        public Double call(){
+        public Double call() throws BrokenBarrierException, InterruptedException {
             long rem = starting;
             double answer = 0.0;
             while (working){
@@ -77,6 +82,9 @@ public class Calculator {
                 if (iterations > maximumIterations.get())
                     maximumIterations.set(iterations);
             }
+
+            cyclicBarrier.await();
+
 
             while (iterations < maximumIterations.get()){
                 iterations += 1;

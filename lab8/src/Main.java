@@ -1,5 +1,4 @@
-import sun.misc.Signal;
-
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
@@ -18,21 +17,24 @@ public class Main {
             return;
         }
 
-        Calculator calculator = new Calculator(threadsNumber);
+        CyclicBarrier cyclicBarrier = new CyclicBarrier(threadsNumber);
+        Calculator calculator = new Calculator(threadsNumber, cyclicBarrier);
 
-        Signal.handle(new Signal("INT"), sig -> {
-            calculator.stopWorking();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("getting Answer");
+            double answer;
             try {
-                System.out.println("getting Answer");
-                double answer = calculator.getAnswer();
-                System.out.println("answer           " + answer);
-                System.out.println("true value       " + Math.PI/4);
-                System.out.println("value difference " + (Math.PI / 4 - answer));
-                calculator.shutDown();
+                calculator.stopWorking();
+                answer = calculator.getAnswer();
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        });
+            System.out.println("answer           " + answer);
+            System.out.println("true value       " + Math.PI / 4);
+            System.out.println("value difference " + (Math.PI / 4 - answer));
+            calculator.shutDown();
+        }));
+
         calculator.Calculate();
     }
 }
