@@ -12,13 +12,15 @@
 (defn takePrimes [n]
   (take n (sieve (iterate inc 2))))
 
-;(println (time (nth primeSieve 10)))
-;(println (time (nth primeSieve 10)))
-;(println (takePrimes 5))
-;(println (type (takePrimes 5)))
+(defn takeTimeSieveInString [n]
+  (nth (clojure.string/split (with-out-str (time (nth primeSieve n))) #" ") 2))
+
+(defn takeTimeFloat [n]
+  (Float/parseFloat (takeTimeSieveInString n)))
 
 (test/deftest lab2Test
   (test/testing "tests:"
-    (test/is (<= (time (nth primeSieve 1000)) (time (nth primeSieve 1000))))
+    (test/is (> (takeTimeFloat 1000) (* (takeTimeFloat 1000) 100)))
+    (test/is (= (time (nth primeSieve 999)) (time (nth primeSieve 999))))
     (test/is (= (nth primeSieve 0) 2))
     (test/is (= (takePrimes 5) (lazy-seq [2, 3, 5, 7, 11])))))
