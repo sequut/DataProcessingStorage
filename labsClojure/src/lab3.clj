@@ -23,27 +23,21 @@
 
 (defn bigSeq [n]
   (take n (iterate inc 1)))
-
-(defn takeTimeParallelFilterInString [func seq]
-  (nth (clojure.string/split (with-out-str (time (parallelFilter func seq))) #" ") 2))
-
-(defn takeTimeParallelFloat [func seq]
-  (Float/parseFloat (takeTimeParallelFilterInString func seq)))
-
-(defn takeTimeFilterInString [func seq]
-  (nth (clojure.string/split (with-out-str (time (filter func seq))) #" ") 2))
-
-(defn takeTimeFloat [func seq]
-  (Float/parseFloat (takeTimeParallelFilterInString func seq)))
-
 ;(time (println (parallelFilter check (bigSeq 100))))
 ;(time (println (filter check (bigSeq 100))))
 
 ;(println (takeTimeParallelFloat check (bigSeq 100)))
 ;(println (takeTimeFloat check (bigSeq 100)))
+(time (println (->> (iterate inc 1)
+                    (parallelFilter check)
+                    (take 10)
+                    )))
 
+(time (println (->> (iterate inc 1)
+                    (filter check)
+                    (take 10)
+                    )))
 
 (test/deftest lab3Test
   (test/testing "tests:"
-    (test/is (= (parallelFilter even? (bigSeq 10)) (list 2 4 6 8 10)))
-    (test/is (> (takeTimeFloat check (bigSeq 1000)) (* (takeTimeParallelFloat check (bigSeq 1000)) 1)))))
+    (test/is (= (parallelFilter even? (bigSeq 10)) (list 2 4 6 8 10)))))
