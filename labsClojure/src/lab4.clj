@@ -67,9 +67,9 @@
    Adds the given 'amount' of ware to the storage and notifies all the registered factories about it 
    state - see code of 'storage' for structure"
   [state amount]
-  (swap! (state :storage) #(+ % amount))      ;update counter, could not fail
+  (swap! (state :storage) #(+ % amount)) ;update counter, could not fail
   (let [ware (state :ware),
-        cnt @(state :storage),                
+        cnt @(state :storage),
         notify-step (state :notify-step),
         consumers (state :consumers)]
     ;;logging part, notify-step == 0 means no logging
@@ -77,23 +77,12 @@
                (> (int (/ cnt notify-step))
                   (int (/ (- cnt amount) notify-step))))
       (println (.format (new SimpleDateFormat "hh.mm.ss.SSS") (new Date))
-              "|" ware "amount: " cnt))
+               "|" ware "amount: " cnt))
     ;;factories notification part
     (when consumers
       (doseq [consumer (shuffle consumers)]
-        (send (consumer :worker) notify-msg ware (state :storage) amount))))
-  state)                 ;worker itself is immutable, keeping configuration only
-
-
-(defn isEnoughWare [wareNeeded buffer]
-  (some (fn [kv] (and (= (key wareNeeded) (key kv)) (>= (val kv) (val wareNeeded)))) (seq buffer)))
-
-(defn update-map [m f]
-  (reduce-kv (fn [m k v]
-               (assoc m k (f k v))) {} m))
-
-(defn clearBuffer [buffer bill]
-  (update-map buffer (fn [key val] (- val (bill key)))))
+        (send (consumer :worker) notify-msg ware (state :storage)))))
+  state) ;worker itself is immutable, keeping configuration only
 
 (defn notify-msg
   "A message that can be sent to a factory worker to notify that the provided 'amount' of 'wares' are
@@ -107,36 +96,20 @@
    ;;   after it finished all the wares must be removed from the internal ':buffer' and ':target-storage' must be notified  
    ;;   with 'supply-msg'
    ;; - return new agent state with possibly modified ':buffer' in any case!
-  [state ware storage-atom amount]
-  (
-    let [
-         required_count (- ((state :bill) ware) ((state :buffer) ware))
-         updated_state (
-                         if (> required_count 0)
-                         (try
-                           (let [cnt_to_take (min @storage-atom required_count)]
-                             (swap! storage-atom (fn [x] (- x cnt_to_take)))
-                             (let [newBuffer (update (state :buffer) ware (fn [prev_count] (+ prev_count cnt_to_take)))]
-                               (update state :buffer (fn [_] newBuffer))
-                               )
-                             )
-                           (catch IllegalStateException _ state)
-                           )
-                         state
-                         )
-         ]
-
-    (
-      if (every? (fn [ware_required] (isEnoughWare ware_required (state :buffer))) (seq (state :bill)))
-      (let [state_clear_buffer (update state :buffer (fn [buff] (clearBuffer buff (state :bill))))]
+  [state ware storage-atom]
+  (let [bill (state :bill)
+        buffer (state :buffer)
+        needed_amount (- (bill ware) (buffer ware))
+        [a_old a_new] (swap-vals! storage-atom #(- % (min % needed_amount)))
+        new_buffer (assoc buffer ware (+ (buffer ware) (- a_old a_new)))]
+    (if (= bill new_buffer)
+      (do
         (Thread/sleep (state :duration))
         (send ((state :target-storage) :worker) supply-msg (state :amount))
-        state_clear_buffer
-        )
-      updated_state
-      )
-    )
-  )
+        (assoc state :buffer (reduce-kv (fn [acc k _] (assoc acc k 0))
+                                        {} bill)))
+      (assoc state :buffer new_buffer))
+    ))
 
 
 (def safe-storage (storage "Safe" 1))
